@@ -647,8 +647,6 @@
                   source: {{CATALOG}}.{{SCHEMA}}.prospects
                   "on": contacts.prospect_id = prospects.prospect_id
 
-          filter: campaigns.start_date >= DATE('2024-01-01') AND campaigns.start_date <= CURRENT_DATE
-
           dimensions:
             - name: complaint_type
               expr: "source.complaint_type[0]"
