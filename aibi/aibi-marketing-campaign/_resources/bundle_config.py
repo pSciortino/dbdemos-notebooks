@@ -114,20 +114,20 @@
           AS $$
           version: 1.1
 
-          source: `{{CATALOG}}`.`{{SCHEMA}}`.events
+          source: {{CATALOG}}.{{SCHEMA}}.events
 
           joins:
             - name: campaigns
-              source: `{{CATALOG}}`.`{{SCHEMA}}`.campaigns
+              source: {{CATALOG}}.{{SCHEMA}}.campaigns
               using:
                 - campaign_id
             - name: contacts
-              source: `{{CATALOG}}`.`{{SCHEMA}}`.contacts
+              source: {{CATALOG}}.{{SCHEMA}}.contacts
               using:
                 - contact_id
               joins:
                 - name: prospects
-                  source: `{{CATALOG}}`.`{{SCHEMA}}`.prospects
+                  source: {{CATALOG}}.{{SCHEMA}}.prospects
                   "on": contacts.prospect_id = prospects.prospect_id
 
           filter: campaigns.start_date >= DATE('2024-01-01') AND campaigns.start_date <= CURRENT_DATE
@@ -433,20 +433,20 @@
           AS $$
           version: 1.1
 
-          source: `{{CATALOG}}`.`{{SCHEMA}}`.feedbacks
+          source: {{CATALOG}}.{{SCHEMA}}.feedbacks
 
           joins:
             - name: campaigns
-              source: `{{CATALOG}}`.`{{SCHEMA}}`.campaigns
+              source: {{CATALOG}}.{{SCHEMA}}.campaigns
               using:
                 - campaign_id
             - name: contacts
-              source: `{{CATALOG}}`.`{{SCHEMA}}`.contacts
+              source: {{CATALOG}}.{{SCHEMA}}.contacts
               using:
                 - contact_id
               joins:
                 - name: prospects
-                  source: `{{CATALOG}}`.`{{SCHEMA}}`.prospects
+                  source: {{CATALOG}}.{{SCHEMA}}.prospects
                   "on": contacts.prospect_id = prospects.prospect_id
 
           filter: campaigns.start_date >= DATE('2024-01-01') AND campaigns.start_date <= CURRENT_DATE
@@ -631,20 +631,20 @@
           AS $$
           version: 1.1
 
-          source: `{{CATALOG}}`.`{{SCHEMA}}`.issues
+          source: {{CATALOG}}.{{SCHEMA}}.issues
 
           joins:
             - name: campaigns
-              source: `{{CATALOG}}`.`{{SCHEMA}}`.campaigns
+              source: {{CATALOG}}.{{SCHEMA}}.campaigns
               using:
                 - campaign_id
             - name: contacts
-              source: `{{CATALOG}}`.`{{SCHEMA}}`.contacts
+              source: {{CATALOG}}.{{SCHEMA}}.contacts
               using:
                 - contact_id
               joins:
                 - name: prospects
-                  source: `{{CATALOG}}`.`{{SCHEMA}}`.prospects
+                  source: {{CATALOG}}.{{SCHEMA}}.prospects
                   "on": contacts.prospect_id = prospects.prospect_id
 
           filter: campaigns.start_date >= DATE('2024-01-01') AND campaigns.start_date <= CURRENT_DATE
