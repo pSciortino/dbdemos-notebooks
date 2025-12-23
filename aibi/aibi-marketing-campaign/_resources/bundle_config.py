@@ -427,7 +427,7 @@
             $$
           """,
           """
-          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedbacks
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
           WITH METRICS
           LANGUAGE YAML
           AS $$
