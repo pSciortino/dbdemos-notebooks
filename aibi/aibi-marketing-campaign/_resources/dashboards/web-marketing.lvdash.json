@@ -3,17 +3,17 @@
     {
       "name": "735f9c7b",
       "displayName": "metrics_events",
-      "asset_name": "`{{CATALOG}}`.`{{SCHEMA}}`.metrics_events"
+      "asset_name": "main.dbdemos_aibi_cme_marketing_campaign.metrics_events"
     },
     {
       "name": "fd53cf6d",
       "displayName": "metrics_feedback",
-      "asset_name": "`{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback"
+      "asset_name": "main.dbdemos_aibi_cme_marketing_campaign.metrics_feedback"
     },
     {
       "name": "3dc85a76",
       "displayName": "metrics_issues",
-      "asset_name": "`{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues"
+      "asset_name": "main.dbdemos_aibi_cme_marketing_campaign.metrics_issues"
     },
     {
       "name": "5d2ed024",
@@ -35,7 +35,7 @@
         "    MEASURE(`unique_clicks`),\n",
         "    MEASURE(`ctr`),\n",
         "    MEASURE(`delivery_rate`)\n",
-        "FROM `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events \n",
+        "FROM main.dbdemos_aibi_cme_marketing_campaign.metrics_events \n",
         "GROUP BY ALL\n",
         "ORDER BY MEASURE(`ctr`) desc, cost ASC;"
       ]
