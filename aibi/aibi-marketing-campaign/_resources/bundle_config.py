@@ -806,20 +806,16 @@
       ],
       [
         "CREATE OR REPLACE FUNCTION `{{CATALOG}}`.`{{SCHEMA}}`.get_highest_ctr() RETURNS TABLE(campaign_id INT, campaign_name STRING, ctr DOUBLE) COMMENT 'Function that extracts the campaign with the highest click through rate ever' RETURN SELECT campaign_id, campaign_name, ctr FROM (SELECT e.campaign_id, c.campaign_name, try_divide(SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END), SUM(CASE WHEN e.event_type = 'delivered' THEN 1 ELSE 0 END)) AS ctr FROM `{{CATALOG}}`.`{{SCHEMA}}`.`events` e INNER JOIN `{{CATALOG}}`.`{{SCHEMA}}`.`campaigns` c ON e.campaign_id = c.campaign_id WHERE e.event_type IN ('delivered', 'click') GROUP BY e.campaign_id, c.campaign_name ORDER BY ctr DESC LIMIT 1)"
-      ]
+      ] 
   ],
   "genie_rooms":[
     {
      "id": "marketing-campaign",
      "display_name": "DBDemos - AI/BI - Marketing Campaign",     
      "description": "Analyze your Marketing Campaign effectiveness leveraging AI/BI Dashboard. Deep dive into your data and metrics.",
-     "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.campaigns",
-                           "{{CATALOG}}.{{SCHEMA}}.contacts",
-                           "{{CATALOG}}.{{SCHEMA}}.events",
-                           "{{CATALOG}}.{{SCHEMA}}.feedbacks",
-                           "{{CATALOG}}.{{SCHEMA}}.issues",
-                           "{{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling",
-                           "{{CATALOG}}.{{SCHEMA}}.prospects"],
+     "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.metrics_events",
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_feedback",
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_issues",
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
