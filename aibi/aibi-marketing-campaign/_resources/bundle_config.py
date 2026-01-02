@@ -813,13 +813,9 @@
      "id": "marketing-campaign",
      "display_name": "DBDemos - AI/BI - Marketing Campaign",     
      "description": "Analyze your Marketing Campaign effectiveness leveraging AI/BI Dashboard. Deep dive into your data and metrics.",
-     "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.campaigns",
-                           "{{CATALOG}}.{{SCHEMA}}.contacts",
-                           "{{CATALOG}}.{{SCHEMA}}.events",
-                           "{{CATALOG}}.{{SCHEMA}}.feedbacks",
-                           "{{CATALOG}}.{{SCHEMA}}.issues",
-                           "{{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling",
-                           "{{CATALOG}}.{{SCHEMA}}.prospects"],
+     "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.metrics_events",
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_feedback",
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_issues",
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
