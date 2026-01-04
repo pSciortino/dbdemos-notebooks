@@ -22,7 +22,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Library Installs
-# MAGIC %pip install -U -qqqq mlflow>=3.1.1 langchain langgraph databricks-langchain pydantic databricks-agents unitycatalog-langchain[databricks] uv
+# MAGIC %pip install -U -qqqq mlflow>=3.1.4 langchain==0.3.27 langgraph==0.6.11 databricks-langchain pydantic databricks-agents unitycatalog-langchain[databricks] databricks-feature-engineering==0.12.1 protobuf<5  cryptography<43 databricks-mcp
 # MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
@@ -45,6 +45,7 @@
 
 # DBTITLE 1,let's try our ai_parse_document function
 # MAGIC %sql
+# MAGIC -- ai_parse_document is available in DBR 17.1 or serverless runtime
 # MAGIC SELECT ai_parse_document(content) AS parsed_document
 # MAGIC   FROM READ_FILES('/Volumes/main_build/dbdemos_ai_agent/raw_data/pdf_documentation/', format => 'binaryFile') limit 2
 
@@ -88,7 +89,7 @@
 # MAGIC     doc_uri
 # MAGIC   FROM (
 # MAGIC     SELECT array_join(
-# MAGIC             transform(parsed_document:document.pages::ARRAY<STRUCT<content:STRING>>, x -> x.content), '\n') AS content,
+# MAGIC             transform(parsed_document:document.elements::ARRAY<STRUCT<content:STRING>>, x -> x.content), '\n') AS content,
 # MAGIC            path as doc_uri
 # MAGIC     FROM (
 # MAGIC       SELECT ai_parse_document(content) AS parsed_document, path
@@ -246,6 +247,10 @@ model_config = mlflow.models.ModelConfig(development_config=conf_path)
 
 # COMMAND ----------
 
+# MAGIC %pip install databricks-mcp
+
+# COMMAND ----------
+
 from agent import AGENT 
 
 #Let's try our retriever to make sure we know have access to the wifi router pdf guide
@@ -268,8 +273,8 @@ for r in AGENT.get_resources():
 with mlflow.start_run(run_name=model_config.get('config_version_name')):
   logged_agent_info = mlflow.pyfunc.log_model(
     name="agent",
-    python_model="agent.py",
-    model_config="agent_config.yaml",
+    python_model=agent_eval_path+"/agent.py",
+    model_config=conf_path,
     input_example={"input": [{"role": "user", "content": request_example}]},
      # Determine resources (endpoints, fonctions, vs...) to specify for automatic auth passthrough for deployment
     resources=AGENT.get_resources(),

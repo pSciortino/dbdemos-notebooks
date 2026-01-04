@@ -16,10 +16,18 @@
 # MAGIC
 # MAGIC We will look at how we test and promote a new __Challenger__ model as a candidate to replace an existing __Champion__ model.
 # MAGIC
-# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-3.png?raw=true" width="1200">
+# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-3b-v2.png?raw=true" width="1200">
 # MAGIC
 # MAGIC <!-- Collect usage data (view). Remove it to disable collection or disable tracker during installation. View README for more details.  -->
 # MAGIC <img width="1px" src="https://ppxrzfxige.execute-api.us-west-2.amazonaws.com/v1/analytics?category=lakehouse&notebook=03_from_notebook_to_models_in_uc&demo_name=mlops-end2end&event=VIEW">
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Last environment tested:
+# MAGIC ```
+# MAGIC mlflow==3.3.2
+# MAGIC ```
 
 # COMMAND ----------
 
@@ -30,14 +38,6 @@
 # MAGIC Unity Catalog proposes free-text model alias, i.e., `Baseline`, `Challenger`, `Champion`, along with tagging.
 # MAGIC
 # MAGIC Users with appropriate permissions can create models, modify aliases and tags and **CREATE MODEL VERSION**s which would trigger Deployment jobs.
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC Last environment tested:
-# MAGIC ```
-# MAGIC mlflow==3.1.4
-# MAGIC ```
 
 # COMMAND ----------
 
@@ -73,7 +73,7 @@ from datetime import datetime
 from datetime import timedelta
 
 
-# Let's get our best ml run
+# Let's get our best ml run (for Demo Purposes - in reality one would be searching accross multiple runs)
 best_run_name = "mlops-hpo-best-run" # "smoke-test"
 
 best_model = mlflow.search_runs(

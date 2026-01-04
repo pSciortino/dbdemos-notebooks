@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC It will enable having a "Human-In-The-Loop" to approve a new model version _OPTIONNAL_ as part of the model's [deployment job](https://docs.databricks.com/aws/en/mlflow/deployment-job)
 # MAGIC
-# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-4.png?raw=true" width="1200">
+# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-4b-v2.png?raw=true" width="1200">
 # MAGIC
 # MAGIC *Note: In a typical mlops setup, this would run as part of an automated deployment job to validate a new model. We'll run this demo as an interactive notebook.*
 # MAGIC
@@ -18,12 +18,16 @@
 # MAGIC %pip install --quiet mlflow-skinny --upgrade --pre
 # MAGIC
 # MAGIC
-# MAGIC dbutils.library.restartPython()
+# MAGIC %restart_python
 
 # COMMAND ----------
 
-dbutils.widgets.text("model_name", "", "Model Name") # Will be populated from Deployment Jobs Parameters
-dbutils.widgets.text("model_version", "", "Model Version") # Will be populated from Deployment Jobs Parameters
+# MAGIC %run ../_resources/00-setup $adv_mlops=true
+
+# COMMAND ----------
+
+dbutils.widgets.text("model_name", f"{catalog}.{db}.advanced_mlops_churn", "Model Name") # Will be populated from Deployment Jobs Parameters
+dbutils.widgets.text("model_version", "1", "Model Version") # Will be populated from Deployment Jobs Parameters
 dbutils.widgets.text("approval_tag_name", "Approval_Check", "Approval Tag to check")
 
 # COMMAND ----------

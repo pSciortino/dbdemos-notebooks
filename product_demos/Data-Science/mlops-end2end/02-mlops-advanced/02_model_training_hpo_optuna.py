@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC We'll run a couple of trainings to test different models
 # MAGIC
-# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-2.png?raw=True" width="1200">
+# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-2-v2.png?raw=True" width="1200">
 # MAGIC
 # MAGIC <!-- Collect usage data (view). Remove it to disable collection. View README for more details.  -->
 # MAGIC <img width="1px" src="https://www.google-analytics.com/collect?v=1&gtm=GTM-NKQ8TT7&tid=UA-163989034-1&cid=555&aip=1&t=event&ec=field_demos&ea=display&dp=%2F42_field_demos%2Ffeatures%2Fmlops%2F02_auto_ml&dt=MLOPS">
@@ -19,13 +19,15 @@
 # MAGIC %md
 # MAGIC Last environment tested:
 # MAGIC ```
-# MAGIC databricks-feature-engineering==0.13.0a3
-# MAGIC mlflow==3.1.4
+# MAGIC databricks-feature-engineering==0.13.0a8
+# MAGIC mlflow==3.3.2
+# MAGIC optuna>=4.4.0
+# MAGIC DBR/MLR16.4LTS (Recommended - Non-Autoscaling Cluster) OR Serverless v2
 # MAGIC ```
 
 # COMMAND ----------
 
-# MAGIC %pip install --quiet databricks-feature-engineering>=0.13.0a3 mlflow --upgrade lightgbm optuna
+# MAGIC %pip install --quiet databricks-feature-engineering>=0.13.0a8 mlflow --upgrade lightgbm optuna
 # MAGIC
 # MAGIC
 # MAGIC %restart_python
@@ -110,12 +112,16 @@ pos_label = "Yes"
 # COMMAND ----------
 
 # DBTITLE 1,filter/ensure we take latest label for every customer
-from pyspark.sql.functions import col, max
+from pyspark.sql.functions import col, last, max
 
 
 latest_customer_ids_df = labels_df \
     .groupBy("customer_id") \
-    .agg(max("transaction_ts").alias("transaction_ts"))
+    .agg(
+        max("transaction_ts").alias("transaction_ts"),
+        last(label_col).alias(label_col),
+        last("split").alias("split")
+    )
 
 # display(latest_customer_ids_df)
 
@@ -139,10 +145,10 @@ fe = FeatureEngineeringClient()
 
 # Create Feature specifications object
 training_set_specs = fe.create_training_set(
-  df=labels_df, # DataFrame with lookup keys and label/target (+ any other input)
+  df=latest_customer_ids_df, # DataFrame with lookup keys and label/target (+ any other input)
   label="churn",
   feature_lookups=feature_lookups_n_functions,
-  exclude_columns=["customer_id", "transaction_ts", "split"],
+  exclude_columns=["customer_id", "transaction_ts"],
   exclude_null_labels=True,
   # lookback_window=timedelta(days=1), # Set to None for no lookback window
 )
@@ -272,7 +278,8 @@ preprocessor = ColumnTransformer(transformers, remainder="drop", sparse_threshol
 # MAGIC 4. Parallel Execution: Optuna scales to parallel execution on a single node and multi-node.
 # MAGIC
 # MAGIC
-# MAGIC We will leverage the new `MLflowStorage` and `MlflowSparkStudy` objects. _WORK-IN-PROGRESS_
+# MAGIC We will leverage the new `MLflowStorage` and `MlflowSparkStudy` objects.
+# MAGIC
 
 # COMMAND ----------
 
@@ -352,13 +359,15 @@ class ObjectiveOptuna(object):
       num_leaves = trial.suggest_int("num_leaves", 2, 256),
       classifier_obj = LGBMClassifier(force_row_wise=True, verbose=-1,
                                       n_estimators=n_estimators, max_depth=max_depth, learning_rate=learning_rate, max_bin=max_bin, num_leaves=num_leaves, random_state=self.rng_seed)
-    
+      
     # Assemble the pipeline
     this_model = Pipeline(steps=[("preprocessor", self.preprocessor), ("classifier", classifier_obj)])
 
     # Fit the model
     mlflow.sklearn.autolog(disable=True) # Disable mlflow autologging to avoid logging artifacts for every run
+    
     this_model.fit(self.X_train, self.Y_train)
+
 
     # Predict on validation set
     y_val_pred = this_model.predict(self.X_val)
@@ -372,22 +381,40 @@ class ObjectiveOptuna(object):
 
 # DBTITLE 1,Define the Sampler
 optuna_sampler = optuna.samplers.TPESampler(
-  n_startup_trials=4, # If using on-demand cluster you can set to num_cpu_cores in driver node (or more if spark is oversubscribed)
-  n_ei_candidates=4, # If using on-demand cluster you can set to num_cpu_cores in driver node (or more if spark is oversubscribed)
   seed=2025 # Random Number Generator seed
 )
 
 # COMMAND ----------
 
+# DBTITLE 1,Define the Pruner
+from optuna.pruners import BasePruner
+
+
+class NoneValuePruner(BasePruner):
+  """Custom Pruner to ignore failed trials with None value."""
+
+  def prune(self, study, trial):
+    # If the trial's value is None, prune it
+    if trial.value is None:
+      return True
+      
+    else:
+      return False
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC #### Quick test/debug locally
-# MAGIC _without mlflow_
 
 # COMMAND ----------
 
 objective_fn = ObjectiveOptuna(X_train, Y_train, preprocessor, pos_label_in=pos_label)
-study_debug = optuna.create_study(direction="maximize", study_name="test_debug", sampler=optuna_sampler)
-study_debug.optimize(objective_fn, n_trials=2)
+
+# COMMAND ----------
+
+# DBTITLE 1,without mlflow
+study_debug = optuna.create_study(direction="maximize", study_name="test_debug", sampler=optuna_sampler, pruner= NoneValuePruner())
+study_debug.optimize(objective_fn, n_trials=4, n_jobs=-1)
 
 # COMMAND ----------
 
@@ -413,18 +440,18 @@ experiment_name = f"{xp_path}/{xp_name}" # Point to given experiment (Staging/Pr
 # experiment_name = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get() # Point to local/notebook experiment (Dev)
 
 try:
+  print(f"Loading experiment: {experiment_name}")
   experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
 
-except:
-  with mlflow.start_run(run_name="dummy-run") as current_run:
-    # Dummy run to create notebook experiment if it doesn't exist
-    experiment_id = current_run.info.experiment_id
-    mlflow.end_run()
+except Exception as e:
+  print(f"Creating experiment: {experiment_name}")
+  experiment_id = mlflow.create_experiment(name=experiment_name, tags={"dbdemos":"advanced"})
 
 # COMMAND ----------
 
 import mlflow
 from mlflow.optuna.storage import MlflowStorage
+from mlflow.pyspark.optuna.study import MlflowSparkStudy
 
 
 mlflow.set_experiment(f"{xp_path}/{xp_name}")
@@ -435,7 +462,30 @@ mlflow_storage = MlflowStorage(experiment_id=experiment_id)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Quick test/debug locally
+# MAGIC with MLFlow
+
+# COMMAND ----------
+
+mlflow_optuna_study_debug = MlflowSparkStudy(
+  pruner= NoneValuePruner(),
+  sampler=optuna_sampler,
+  study_name="mlflow-smoke-test",
+  storage=mlflow_storage,
+)
+mlflow_optuna_study_debug._directions = ["maximize"]
+
+mlflow_optuna_study_debug.optimize(objective_fn, n_trials=8, n_jobs=4)
+
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ### Main training function
+
+# COMMAND ----------
+
+display(X_train)
 
 # COMMAND ----------
 
@@ -446,20 +496,23 @@ from mlflow.exceptions import MlflowException
 from mlflow.models import Model
 from mlflow.pyfunc import PyFuncModel
 from mlflow import pyfunc
-from mlflow.pyspark.optuna.study import MlflowSparkStudy
 
 
-def optuna_hpo_fn(n_trials: int, X_train: pd.DataFrame, Y_train: pd.Series, X_test: pd.DataFrame, Y_test: pd.Series, training_set_specs_in, preprocessor_in: ColumnTransformer, experiment_id: str, pos_label_in: str = pos_label, rng_seed_in: int = 2025, run_name:str = "spark-mlflow-tuning", optuna_sampler_in: optuna.samplers.TPESampler = optuna_sampler) -> optuna.study.study.Study:
+def optuna_hpo_fn(n_trials: int, X_train: pd.DataFrame, Y_train: pd.Series, X_test: pd.DataFrame, Y_test: pd.Series, training_set_specs_in, preprocessor_in: ColumnTransformer, experiment_id: str, pos_label_in: str = pos_label, rng_seed_in: int = 2025, run_name:str = "spark-mlflow-tuning", optuna_sampler_in: optuna.samplers.TPESampler = optuna_sampler, optuna_pruner_in: optuna.pruners.BasePruner = None, n_jobs: int = 2) -> optuna.study.study.Study:
+    """
+    Increasing `n_jobs` may cause experiment to fail due to failed trials which return None and can't be pruned/caught in parallel mode
+    """
 
     # Kick distributed HPO as nested runs
     objective_fn = ObjectiveOptuna(X_train, Y_train, preprocessor_in, rng_seed_in, pos_label_in)
     mlflow_optuna_study = MlflowSparkStudy(
+        pruner=optuna_pruner_in,
         sampler=optuna_sampler_in,
         study_name=run_name,
         storage=mlflow_storage,
     )
     mlflow_optuna_study._directions = ["maximize"]
-    mlflow_optuna_study.optimize(objective_fn, n_trials=n_trials, n_jobs=-1)
+    mlflow_optuna_study.optimize(objective_fn, n_trials=n_trials, n_jobs=n_jobs)
 
     # Extract best trial info
     best_model_params = mlflow_optuna_study.best_params
@@ -523,6 +576,7 @@ def optuna_hpo_fn(n_trials: int, X_train: pd.DataFrame, Y_train: pd.Series, X_te
             artifact_path="model",
             flavor=mlflow.sklearn,
             training_set=training_set_specs_in,
+            # env_manager="uv"
         )
         mlflow.end_run()
 
@@ -536,7 +590,7 @@ def optuna_hpo_fn(n_trials: int, X_train: pd.DataFrame, Y_train: pd.Series, X_te
 # COMMAND ----------
 
 # Invoke training function which will be distributed accross workers/nodes
-single_node_study = optuna_hpo_fn(
+distributed_study = optuna_hpo_fn(
   n_trials=32, # Decrease this for live demo purposes
   X_train=X_train,
   X_test=X_test,
@@ -547,8 +601,10 @@ single_node_study = optuna_hpo_fn(
   experiment_id=experiment_id,
   pos_label_in=pos_label,
   rng_seed_in=2025,
-  run_name="mlops-hpo-best-run", #"smoke-test"
+  run_name="mlops-hpo-best-run", # "smoke-test"
   optuna_sampler_in=optuna_sampler,
+  optuna_pruner_in=NoneValuePruner(),
+  # n_jobs = 2, # Increase this to number for more parallel trials
 )
 
 # COMMAND ----------

@@ -5,7 +5,7 @@
 # MAGIC
 # MAGIC With AutoML, our best model was automatically saved in our MLFlow registry.
 # MAGIC
-# MAGIC All we need to do now is use this model to run Inferences. A simple solution is to share the model name to our Data Engineering team and they'll be able to call this model within the pipeline they maintained. That's what we did in our Delta Live Table pipeline!
+# MAGIC All we need to do now is use this model to run Inferences. A simple solution is to share the model name to our Data Engineering team and they'll be able to call this model within the pipeline they maintained. That's what we did in our Spark Declarative Pipelines pipeline!
 # MAGIC
 # MAGIC Alternatively, this can be schedule in a separate job. Here is an example to show you how MLFlow can be directly used to retriver the model and run inferences.
 # MAGIC
@@ -15,6 +15,7 @@
 # COMMAND ----------
 
 # MAGIC %pip install mlflow==3.1.0
+# MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -25,13 +26,9 @@
 # MAGIC %md-sandbox
 # MAGIC ##Deploying the model for batch inferences
 # MAGIC
-# MAGIC <img style="float: right; margin-left: 20px" width="600" src="https://github.com/QuentinAmbard/databricks-demo/raw/main/retail/resources/images/churn_batch_inference.gif" />
-# MAGIC
 # MAGIC Now that our model is available in the Registry, we can load it to compute our inferences and save them in a table to start building dashboards.
 # MAGIC
 # MAGIC We will use MLFlow function to load a pyspark UDF and distribute our inference in the entire cluster. If the data is small, we can also load the model with plain python and use a pandas Dataframe.
-# MAGIC
-# MAGIC If you don't know how to start, Databricks can generate a batch inference notebook in just one click from the model registry: Open MLFlow model registry and click the "User model for inference" button!
 
 # COMMAND ----------
 

@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC [Deployment jobs](https://docs.databricks.com/aws/en/mlflow/deployment-job) integrate naturally with the newly released [Unity Catalog Create Model Version ACL](https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges#create-model-version) to complete your MLOps story. Specifically, a user can be granted the **`CREATE MODEL VERSION ACL`** to register new model versions to the model. Once the user deems a model good enough for production, they will register this version to the Unity Catalog model, which will kick off this deployment job to automatically evaluate the model.
 # MAGIC
-# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-4.png?raw=true" width="1200">
+# MAGIC <img src="https://github.com/databricks-demos/dbdemos-resources/blob/main/images/product/mlops/advanced/banners/mlflow-uc-end-to-end-advanced-4a-v2.png?raw=true" width="1200">
 # MAGIC
 # MAGIC *Note: In a typical mlops setup, this would run as part of an automated deployment job to validate a new model. We'll run this demo as an interactive notebook.*
 # MAGIC
@@ -38,13 +38,13 @@
 # MAGIC %md
 # MAGIC Last environment tested:
 # MAGIC ```
-# MAGIC databricks-feature-engineering==0.13.0a3
-# MAGIC mlflow==3.1.4
+# MAGIC databricks-feature-engineering==0.13.0a8
+# MAGIC mlflow==3.3.2
 # MAGIC ```
 
 # COMMAND ----------
 
-# MAGIC %pip install --quiet databricks-feature-engineering>=0.13.0a3 mlflow --upgrade
+# MAGIC %pip install --quiet databricks-feature-engineering>=0.13.0a8 mlflow --upgrade
 # MAGIC
 # MAGIC
 # MAGIC %restart_python
@@ -56,7 +56,7 @@
 # COMMAND ----------
 
 dbutils.widgets.text("model_name", f"{catalog}.{db}.advanced_mlops_churn", "Model Name") # Will be populated from Deployment Jobs Parameters
-dbutils.widgets.text("model_version", "", "Model Version") # Will be populated from Deployment Jobs Parameters
+dbutils.widgets.text("model_version", "1", "Model Version") # Will be populated from Deployment Jobs Parameters
 
 # COMMAND ----------
 
