@@ -815,7 +815,7 @@
      "description": "Analyze your Marketing Campaign effectiveness leveraging AI/BI Dashboard. Deep dive into your data and metrics.",
      "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.metrics_events",
                            "{{CATALOG}}.{{SCHEMA}}.metrics_feedback",
-                           "{{CATALOG}}.{{SCHEMA}}.metrics_issues",
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_issues"],
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
