@@ -28,7 +28,7 @@
   "serverless_supported": True,
   "cluster": {}, 
   "pipelines": [],
-  "dashboards": [{"name": "[dbdemos] AIBI - Marketing Campaign",       "id": "web-marketing"}
+  "dashboards": [{"name": "[dbdemos] AIBI - Marketing Campaign",       "id": "web-marketing",       "genie_room_id": "marketing-campaign"}
                 ],
   "data_folders":[
     {"source_folder":"aibi/dbdemos_aibi_cme_marketing_campaign/raw_campaigns",              "source_format": "parquet", "target_volume_folder":"raw_campaigns",              "target_format":"parquet"},
