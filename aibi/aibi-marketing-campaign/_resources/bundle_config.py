@@ -802,6 +802,81 @@
                 - distinct campaigns
                 - affected campaigns
             $$
+          """,
+          """
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
+          WITH METRICS
+          LANGUAGE YAML
+          AS $$
+          version: 1.1
+
+          source: {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling
+          comment: "Daily and 7-day trailing (t7d_) email engagement metrics, sliced by event_type."
+
+          dimensions:
+            - name: Date
+              expr: date
+            - name: Event Type
+              expr: event_type
+
+          measures:
+            - name: unique_clicks
+              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
+            - name: total_delivered
+              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
+            - name: total_sent
+              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
+            - name: total_opens
+              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
+            - name: total_clicks
+              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+            - name: total_optouts
+              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
+            - name: total_spam
+              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
+            - name: t7d_unique_clicks
+              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_delivered
+              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_sent
+              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_opens
+              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_clicks
+              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_optouts
+              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_spam
+              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            $$
           """
       ],
       [
@@ -816,21 +891,15 @@
      "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.metrics_events",
                            "{{CATALOG}}.{{SCHEMA}}.metrics_feedback",
                            "{{CATALOG}}.{{SCHEMA}}.metrics_issues",
-                           "{{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling",
-                           "{{CATALOG}}.{{SCHEMA}}.campaigns",
-                           "{{CATALOG}}.{{SCHEMA}}.contacts",
-                           "{{CATALOG}}.{{SCHEMA}}.events",
-                           "{{CATALOG}}.{{SCHEMA}}.feedbacks",
-                           "{{CATALOG}}.{{SCHEMA}}.issues",
-                           "{{CATALOG}}.{{SCHEMA}}.prospects"],
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling"],
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
-            "content": "select date, unique_clicks, sum(unique_clicks) OVER (ORDER BY date RANGE BETWEEN 6 PRECEDING AND CURRENT ROW) AS clicks_t7d, sum(total_delivered) OVER (ORDER BY date RANGE BETWEEN 6 PRECEDING AND CURRENT ROW) AS delivered_t7d, sum(unique_clicks) OVER (ORDER BY date RANGE BETWEEN 27 PRECEDING AND CURRENT ROW) AS clicks_t28d, sum(total_delivered) OVER (ORDER BY date RANGE BETWEEN 27 PRECEDING AND CURRENT ROW) AS delivered_t28d, sum(unique_clicks) OVER (ORDER BY date RANGE BETWEEN 90 PRECEDING AND CURRENT ROW) AS clicks_t91d, sum(total_delivered) OVER (ORDER BY date RANGE BETWEEN 90 PRECEDING AND CURRENT ROW) AS delivered_t91d, unique_clicks / total_delivered as ctr, total_delivered / total_sent AS delivery_rate, total_optouts / total_delivered AS optout_rate, total_spam / total_delivered AS spam_rate, clicks_t7d / delivered_t7d as ctr_t7d, clicks_t28d / delivered_t28d as ctr_t28d, clicks_t91d / delivered_t91d as ctr_t91d from {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling"
+            "content": "SELECT date, MEASURE(unique_clicks), MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling"
         },
         {
             "title": "What are the campaigns with the highest click-through rates?",
-            "content": "SELECT e.campaign_id, first(c.campaign_name) as campaign_name, first(c.campaign_description) as campaign_description, first(c.subject_line) as subject_line, first(c.template) as template, first(c.cost) as cost, first(c.start_date) as start_date, first(c.end_date) as end_date, to_timestamp(first(c.start_date)) as _start_date, to_timestamp(first(c.end_date)) as _end_date, SUM(CASE WHEN e.event_type = 'sent' THEN 1 ELSE 0 END) AS total_sent, SUM(CASE WHEN e.event_type = 'delivered' THEN 1 ELSE 0 END) AS total_delivered, SUM(CASE WHEN e.event_type = 'spam' THEN 1 ELSE 0 END) AS total_spam, SUM(CASE WHEN e.event_type = 'html_open' THEN 1 ELSE 0 END) AS total_opens, SUM(CASE WHEN e.event_type = 'optout_click' THEN 1 ELSE 0 END) AS total_optouts, SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END) AS total_clicks, count(distinct case when e.event_type = 'click' then e.contact_id end) as unique_clicks, unique_clicks / total_delivered as ctr, format_number(ctr, '##.##%') as ctr_p, total_delivered / total_sent as delivery_rate, format_number(delivery_rate, '##.##%') as delivery_rate_p, total_optouts / total_delivered as optouts_rate, format_number(optouts_rate, '##.##%') as optouts_rate_p, total_spam / total_delivered as spam_rate, format_number(spam_rate, '##.##%') as spam_rate_p, sum(p.employees) as total_employees FROM {{CATALOG}}.{{SCHEMA}}.events e INNER JOIN {{CATALOG}}.{{SCHEMA}}.campaigns c on e.campaign_id = c.campaign_id INNER JOIN {{CATALOG}}.{{SCHEMA}}.contacts ct on e.contact_id = ct.contact_id INNER JOIN {{CATALOG}}.{{SCHEMA}}.prospects p on ct.prospect_id = p.prospect_id GROUP BY e.campaign_id HAVING _start_date >= :start_date AND _end_date <= :end_date ORDER BY ctr desc, cost ASC LIMIT 20"
+            "content": "SELECT campaign_id, campaign_name, campaign_description, campaign_template, cost, start_date, end_date, MEASURE(total_sent) AS total_sent, MEASURE(total_delivered) AS total_delivered, MEASURE(total_spam) AS total_spam, MEASURE(total_opens) AS total_opens, MEASURE(total_optouts) AS total_optouts, MEASURE(total_clicks) AS total_clicks, MEASURE(unique_clicks) AS unique_clicks, MEASURE(ctr) AS ctr, MEASURE(delivery_rate) AS delivery_rate, MEASURE(optouts_rate) AS optouts_rate, MEASURE(spam_rate) AS spam_rate, MEASURE(prospect_employees) AS total_employees FROM main.dbdemos_aibi_cme_marketing_campaign.metrics_events WHERE start_date >= :start_date AND end_date <= :end_date GROUP BY ALL ORDER BY ctr DESC, cost ASC LIMIT 20"
         }
     ],
      "instructions": "If a customer ask a forecast, leverage the sql fonction ai_forecast.\nThe mailing_list column in the campaigns table contains all the contact_ids of the contacts to whom the campaign was sent.\nWhen you do joins between tables consider the foreign keys references.",
