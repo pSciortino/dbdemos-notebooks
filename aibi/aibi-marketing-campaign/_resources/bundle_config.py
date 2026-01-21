@@ -103,8 +103,12 @@
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.issues ADD CONSTRAINT issue_contact_fk FOREIGN KEY(contact_id) REFERENCES `{{CATALOG}}`.`{{SCHEMA}}`.contacts NOT ENFORCED RELY"
       ],
       [
+        "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events",
+        # "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback",
+        # "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues",
+        # "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling",
           """
-          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events
+          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -423,7 +427,7 @@
             $$
           """,
           """
-          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
+          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -621,7 +625,7 @@
             $$
           """,
           """
-          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues
+          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -800,13 +804,13 @@
             $$
           """,
           """
-          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
+          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
           WITH METRICS
           LANGUAGE YAML
           AS $$
           version: 1.1
 
-          source: {{CATALOG}}.{{SCHEMA}}.metrics_events
+          source: {{CATALOG}}.{{SCHEMA}}.events
           comment: "Daily and trailing 7-day engagement metrics derived from metrics_events."
 
           dimensions:
