@@ -186,6 +186,13 @@
               synonyms:
                 - email template
                 - template used
+            - name: contact_id
+              expr: contacts.contact_id
+              comment: Unique identifier for the contact.
+              display_name: Contact ID
+              synonyms:
+                - contact identifier
+                - contact id
             - name: prospect_nr_of_employees
               expr: contacts.prospects.employees
               comment: Number of employees working for the prospect.
@@ -808,6 +815,11 @@
 
           source: {{CATALOG}}.{{SCHEMA}}.metrics_events
           comment: "Daily and trailing 7-day engagement metrics derived from metrics_events."
+          joins:
+            - name: contacts
+              source: {{CATALOG}}.{{SCHEMA}}.contacts
+              using:
+                - contact_id
 
           dimensions:
             - name: event_date
@@ -820,17 +832,17 @@
           measures:
             - name: unique_clicks
               expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
-            - name: Total Delivered
+            - name: total_delivered
               expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
-            - name: Total Sent
+            - name: total_sent
               expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
-            - name: Total Opens
+            - name: total_opens
               expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
-            - name: Total Clicks
+            - name: total_clicks
               expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
-            - name: Total Optouts
+            - name: total_optouts
               expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
-            - name: Total Spam
+            - name: total_spam
               expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
             - name: t7d_unique_clicks
               expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
@@ -893,7 +905,7 @@
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
-            "content": "SELECT event_date, MEASURE(daily_unique_clicks) AS daily_unique_clicks, MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling GROUP BY event_date ORDER BY event_date"
+            "content": "SELECT event_date, MEASURE(unique_clicks) AS daily_unique_clicks, MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling GROUP BY event_date ORDER BY event_date"
         },
         {
             "title": "What are the campaigns with the highest click-through rates?",
