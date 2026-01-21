@@ -103,12 +103,8 @@
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.issues ADD CONSTRAINT issue_contact_fk FOREIGN KEY(contact_id) REFERENCES `{{CATALOG}}`.`{{SCHEMA}}`.contacts NOT ENFORCED RELY"
       ],
       [
-        "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events",
-        # "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback",
-        # "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues",
-        # "DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling",
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -427,7 +423,7 @@
             $$
           """,
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -625,7 +621,7 @@
             $$
           """,
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -804,13 +800,13 @@
             $$
           """,
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
           WITH METRICS
           LANGUAGE YAML
           AS $$
           version: 1.1
 
-          source: {{CATALOG}}.{{SCHEMA}}.events
+          source: {{CATALOG}}.{{SCHEMA}}.metrics_events
           comment: "Daily and trailing 7-day engagement metrics derived from metrics_events."
 
           dimensions:
@@ -822,29 +818,62 @@
               display_name: Event Type
 
           measures:
-            - name: daily_unique_clicks
-              expr: MEASURE(unique_clicks)
-              comment: Daily unique clicks
-
-            - name: daily_total_sent
-              expr: MEASURE(total_sent)
-
-            - name: daily_total_delivered
-              expr: MEASURE(total_delivered)
-
-            - name: daily_total_opens
-              expr: MEASURE(total_opens)
-
-            - name: daily_total_clicks
-              expr: MEASURE(total_clicks)
-
+            - name: unique_clicks
+              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
+            - name: Total Delivered
+              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
+            - name: Total Sent
+              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
+            - name: Total Opens
+              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
+            - name: Total Clicks
+              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+            - name: Total Optouts
+              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
+            - name: Total Spam
+              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
             - name: t7d_unique_clicks
-              expr: MEASURE(unique_clicks)
+              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
               window:
                 - order: event_date
                   semiadditive: last
                   range: trailing 7 day
-              comment: Trailing 7-day unique clicks
+            - name: t7d_total_delivered
+              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
+              window:
+                - order: event_date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_sent
+              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
+              window:
+                - order: event_date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_opens
+              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
+              window:
+                - order: event_date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_clicks
+              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+              window:
+                - order: event_date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_optouts
+              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
+              window:
+                - order: event_date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_spam
+              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
+              window:
+                - order: event_date
+                  semiadditive: last
+                  range: trailing 7 day
           $$
           """
       ],
