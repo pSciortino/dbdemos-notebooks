@@ -103,10 +103,8 @@
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.issues ADD CONSTRAINT issue_contact_fk FOREIGN KEY(contact_id) REFERENCES `{{CATALOG}}`.`{{SCHEMA}}`.contacts NOT ENFORCED RELY"
       ],
       [
-          """DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events""",
           """
-          
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -424,10 +422,8 @@
                 - rate of opens
             $$
           """,
-
-          """DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback""",
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_feedback
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -624,9 +620,8 @@
                 - number of positive feedbacks
             $$
           """,
-          """DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues""",
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_issues
           WITH METRICS
           LANGUAGE YAML
           AS $$
@@ -804,9 +799,8 @@
                 - affected campaigns
             $$
           """,
-          """DROP VIEW IF EXISTS `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling""",
           """
-          CREATE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
           WITH METRICS
           LANGUAGE YAML
           AS $$
