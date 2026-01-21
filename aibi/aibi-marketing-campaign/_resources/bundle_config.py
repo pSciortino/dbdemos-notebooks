@@ -72,9 +72,6 @@
       ]
       ,
       [
-        "CREATE OR REPLACE TABLE `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling AS SELECT CAST(event_date AS date) AS date, count(distinct case when event_type = 'click' then contact_id end) as unique_clicks, SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END) AS total_delivered, SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END) AS total_sent, SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END) AS total_opens, SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) AS total_clicks, SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END) AS total_optouts, SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END) AS total_spam FROM `{{CATALOG}}`.`{{SCHEMA}}`.events GROUP BY date"
-      ],
-      [
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.campaigns ALTER COLUMN campaign_id SET NOT NULL",
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.contacts ALTER COLUMN contact_id SET NOT NULL",
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.events ALTER COLUMN event_id SET NOT NULL",
@@ -86,8 +83,7 @@
         "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.events SET TAGS ('system.Certified')",
         "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.contacts SET TAGS ('system.Certified')",
         "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.feedbacks SET TAGS ('system.Certified')",
-        "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.prospects SET TAGS ('system.Certified')",
-        "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling SET TAGS ('system.Certified')"
+        "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.prospects SET TAGS ('system.Certified')"
       ],
       [
           "ALTER TABLE `{{CATALOG}}`.`{{SCHEMA}}`.campaigns ADD CONSTRAINT campaigns_pk PRIMARY KEY(campaign_id)",
@@ -810,77 +806,46 @@
           AS $$
           version: 1.1
 
-          source: {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling
-          comment: "Daily and 7-day trailing (t7d_) email engagement metrics, sliced by event_type."
+          source: {{CATALOG}}.{{SCHEMA}}.metrics_events
+          comment: "Daily and trailing 7-day engagement metrics derived from metrics_events."
 
           dimensions:
-            - name: Date
-              expr: date
-            - name: Event Type
+            - name: event_date
+              expr: event_date
+              display_name: Event Date
+            - name: event_type
               expr: event_type
+              display_name: Event Type
 
           measures:
-            - name: unique_clicks
-              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
-            - name: total_delivered
-              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
-            - name: total_sent
-              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
-            - name: total_opens
-              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
-            - name: total_clicks
-              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
-            - name: total_optouts
-              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
-            - name: total_spam
-              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
+            - name: daily_unique_clicks
+              expr: MEASURE(unique_clicks)
+              comment: Daily unique clicks
+
+            - name: daily_total_sent
+              expr: MEASURE(total_sent)
+
+            - name: daily_total_delivered
+              expr: MEASURE(total_delivered)
+
+            - name: daily_total_opens
+              expr: MEASURE(total_opens)
+
+            - name: daily_total_clicks
+              expr: MEASURE(total_clicks)
+
             - name: t7d_unique_clicks
-              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
+              expr: MEASURE(unique_clicks)
               window:
-                - order: Date
+                - order: event_date
                   semiadditive: last
                   range: trailing 7 day
-            - name: t7d_total_delivered
-              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
-              window:
-                - order: Date
-                  semiadditive: last
-                  range: trailing 7 day
-            - name: t7d_total_sent
-              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
-              window:
-                - order: Date
-                  semiadditive: last
-                  range: trailing 7 day
-            - name: t7d_total_opens
-              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
-              window:
-                - order: Date
-                  semiadditive: last
-                  range: trailing 7 day
-            - name: t7d_total_clicks
-              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
-              window:
-                - order: Date
-                  semiadditive: last
-                  range: trailing 7 day
-            - name: t7d_total_optouts
-              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
-              window:
-                - order: Date
-                  semiadditive: last
-                  range: trailing 7 day
-            - name: t7d_total_spam
-              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
-              window:
-                - order: Date
-                  semiadditive: last
-                  range: trailing 7 day
-            $$
+              comment: Trailing 7-day unique clicks
+          $$
           """
       ],
       [
-        "CREATE OR REPLACE FUNCTION `{{CATALOG}}`.`{{SCHEMA}}`.get_highest_ctr() RETURNS TABLE(campaign_id INT, campaign_name STRING, ctr DOUBLE) COMMENT 'Function that extracts the campaign with the highest click through rate ever' RETURN SELECT campaign_id, campaign_name, ctr FROM (SELECT e.campaign_id, c.campaign_name, try_divide(SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END), SUM(CASE WHEN e.event_type = 'delivered' THEN 1 ELSE 0 END)) AS ctr FROM `{{CATALOG}}`.`{{SCHEMA}}`.`events` e INNER JOIN `{{CATALOG}}`.`{{SCHEMA}}`.`campaigns` c ON e.campaign_id = c.campaign_id WHERE e.event_type IN ('delivered', 'click') GROUP BY e.campaign_id, c.campaign_name ORDER BY ctr DESC LIMIT 1)"
+        "CREATE OR REPLACE FUNCTION `{{CATALOG}}`.`{{SCHEMA}}`.get_highest_ctr() RETURNS TABLE(campaign_name STRING, ctr DOUBLE) COMMENT 'Returns the campaign with the highest click-through rate using metric views' RETURN SELECT campaign_name, MEASURE(ctr) AS ctr FROM `{{CATALOG}}`.`{{SCHEMA}}`.metrics_events GROUP BY campaign_name ORDER BY ctr DESC LIMIT 1"
       ] 
   ],
   "genie_rooms":[
@@ -895,14 +860,14 @@
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
-            "content": "SELECT date, MEASURE(unique_clicks), MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling"
+            "content": "SELECT event_date, MEASURE(daily_unique_clicks) AS daily_unique_clicks, MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling GROUP BY event_date ORDER BY event_date"
         },
         {
             "title": "What are the campaigns with the highest click-through rates?",
             "content": "SELECT campaign_id, campaign_name, campaign_description, campaign_template, cost, start_date, end_date, MEASURE(total_sent) AS total_sent, MEASURE(total_delivered) AS total_delivered, MEASURE(total_spam) AS total_spam, MEASURE(total_opens) AS total_opens, MEASURE(total_optouts) AS total_optouts, MEASURE(total_clicks) AS total_clicks, MEASURE(unique_clicks) AS unique_clicks, MEASURE(ctr) AS ctr, MEASURE(delivery_rate) AS delivery_rate, MEASURE(optouts_rate) AS optouts_rate, MEASURE(spam_rate) AS spam_rate, MEASURE(prospect_employees) AS total_employees FROM main.dbdemos_aibi_cme_marketing_campaign.metrics_events WHERE start_date >= :start_date AND end_date <= :end_date GROUP BY ALL ORDER BY ctr DESC, cost ASC LIMIT 20"
         }
     ],
-     "instructions": "If a customer ask a forecast, leverage the sql fonction ai_forecast.\nThe mailing_list column in the campaigns table contains all the contact_ids of the contacts to whom the campaign was sent.\nWhen you do joins between tables consider the foreign keys references.",
+     "instructions": "If a customer ask a forecast, leverage the sql fonction ai_forecast.\nThe mailing_list column in the campaigns table contains all the contact_ids of the contacts to whom the campaign was sent.\nUse the metric views as the primary semantic layer. Metrics already encapsulate joins and business logic, so avoid joining raw tables unless explicitly required.",
       
       "function_names": [
         "{{CATALOG}}.{{SCHEMA}}.get_highest_ctr"
@@ -910,30 +875,22 @@
      "curated_questions": [
         "How has the total number of emails sent, delivered, and the unique clicks evolved over the last six months?",
         "Which industries have shown the highest engagement rates with marketing campaigns?",
-        "Which subject lines for my campaigns led to the most number of opens?",
+        "Which campaigns achieved the highest open rates?",
         "Which campaigns had the strongest click-through rates (CTR)?"
        ],
      "benchmarks": [
-        {
-            "question_text": "Which is the campaign with the highest click through rate?",
-            "answer_text": "SELECT * FROM `{{CATALOG}}`.`{{SCHEMA}}`.`get_highest_ctr`()"
-        },
-        {
-            "question_text": "Which campaign had the highest total number of clicks?",
-            "answer_text": "SELECT e.`campaign_id`, c.`campaign_name`, COUNT(*) as total_clicks FROM `{{CATALOG}}`.`{{SCHEMA}}`.`events` e INNER JOIN `{{CATALOG}}`.`{{SCHEMA}}`.`campaigns` c ON e.`campaign_id` = c.`campaign_id` WHERE e.`event_type` = 'click' GROUP BY e.`campaign_id`, c.`campaign_name` ORDER BY total_clicks DESC LIMIT 1"
-        },
-        {
-          "question_text":"What is the total number of opens for each campaign? Order by campaign id",
-          "answer_text": "SELECT e.`campaign_id`, c.`campaign_name`, COUNT(*) as total_opens FROM `{{CATALOG}}`.`{{SCHEMA}}`.`events` e INNER JOIN `{{CATALOG}}`.`{{SCHEMA}}`.`campaigns` c ON e.`campaign_id` = c.`campaign_id` WHERE e.`event_type` = 'html_open' GROUP BY e.`campaign_id`, c.`campaign_name` ORDER BY e.`campaign_id`"
-        },
-        {
-          "question_text":"Which campaign had the max total number of opens? Give me the top 1",
-          "answer_text": "SELECT e.`campaign_id`, c.`campaign_name`, COUNT(*) as total_opens FROM `{{CATALOG}}`.`{{SCHEMA}}`.`events` e INNER JOIN `{{CATALOG}}`.`{{SCHEMA}}`.`campaigns` c ON e.`campaign_id` = c.`campaign_id` WHERE e.`event_type` = 'html_open' GROUP BY e.`campaign_id`, c.`campaign_name` ORDER BY total_opens DESC LIMIT 1"
-        },
-        {
-          "question_text":"What is the total number of clicks for each campaign? Order by campaign id",
-          "answer_text": "SELECT e.`campaign_id`, c.`campaign_name`, COUNT(*) as total_clicks FROM `{{CATALOG}}`.`{{SCHEMA}}`.`events` e INNER JOIN `{{CATALOG}}`.`{{SCHEMA}}`.`campaigns` c ON e.`campaign_id` = c.`campaign_id` WHERE e.`event_type` = 'click' GROUP BY e.`campaign_id`, c.`campaign_name` ORDER BY e.`campaign_id`"
-        }
+      {
+        "question_text": "Which is the campaign with the highest click through rate?",
+        "answer_text": "SELECT * FROM `{{CATALOG}}`.`{{SCHEMA}}`.`get_highest_ctr`()"
+      },
+      {
+        "question_text": "Which campaign had the highest total number of clicks?",
+        "answer_text": "SELECT campaign_name, MEASURE(total_clicks) AS total_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_name ORDER BY total_clicks DESC LIMIT 1"
+      },
+      {
+        "question_text": "What is the total number of opens for each campaign?",
+        "answer_text": "SELECT campaign_name, MEASURE(total_opens) AS total_opens FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_name ORDER BY campaign_name"
+      }
     ]
     }
   ]
