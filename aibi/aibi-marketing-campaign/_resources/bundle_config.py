@@ -815,11 +815,6 @@
 
           source: {{CATALOG}}.{{SCHEMA}}.metrics_events
           comment: "Daily and trailing 7-day engagement metrics derived from metrics_events."
-          joins:
-            - name: contacts
-              source: {{CATALOG}}.{{SCHEMA}}.contacts
-              using:
-                - contact_id
 
           dimensions:
             - name: event_date
@@ -905,7 +900,7 @@
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
-            "content": "SELECT event_date, MEASURE(unique_clicks) AS daily_unique_clicks, MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling GROUP BY event_date ORDER BY event_date"
+            "content": "SELECT event_date, MEASURE(unique_clicks) AS daily_unique_clicks, MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY event_date ORDER BY event_date"
         },
         {
             "title": "What are the campaigns with the highest click-through rates?",
