@@ -822,32 +822,12 @@
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
-            "content": "SELECT\n"
-                   "    event_date,\n"
-                   "    MEASURE(unique_clicks)     AS daily_unique_clicks,\n"
-                   "    MEASURE(ctr_t7d) AS t7d_unique_clicks\n"
-                   "FROM {{CATALOG}}.{{SCHEMA}}.metrics_events\n"
-                   "GROUP BY event_date\n"
-                   "ORDER BY event_date"
+            "content": "SELECT\n    event_date,\n    MEASURE(unique_clicks) AS daily_unique_clicks,\n    MEASURE(ctr_t7d) AS t7d_unique_clicks\nFROM {{CATALOG}}.{{SCHEMA}}.metrics_events\nGROUP BY event_date\nORDER BY event_date"
         },
         {
             "title": "What are the campaigns with the highest click-through rates?",
-            "content": "SELECT\n"
-                   "    campaign_id,\n"
-                   "    campaign_name,\n"
-                   "    cost,\n"
-                   "    start_date,\n"
-                   "    end_date,\n"
-                   "    MEASURE(total_sent)      AS total_sent,\n"
-                   "    MEASURE(total_delivered) AS total_delivered,\n"
-                   "    MEASURE(total_clicks)    AS total_clicks,\n"
-                   "    MEASURE(unique_clicks)   AS unique_clicks,\n"
-                   "    MEASURE(ctr)             AS ctr\n"
-                   "FROM {{CATALOG}}.{{SCHEMA}}.metrics_events\n"
-                   "WHERE start_date >= :start_date AND end_date <= :end_date\n"
-                   "GROUP BY ALL\n"
-                   "ORDER BY ctr DESC, cost ASC\n"
-                   "LIMIT 20"}
+            "content": "SELECT\n    campaign_id,\n    campaign_name,\n    cost,\n    start_date,\n    end_date,\n    MEASURE(total_sent) AS total_sent,\n    MEASURE(total_delivered) AS total_delivered,\n    MEASURE(total_clicks) AS total_clicks,\n    MEASURE(unique_clicks) AS unique_clicks,\n    MEASURE(ctr) AS ctr\nFROM {{CATALOG}}.{{SCHEMA}}.metrics_events\nWHERE start_date >= :start_date AND end_date <= :end_date\nGROUP BY ALL\nORDER BY ctr DESC, cost ASC\nLIMIT 20"
+        }
     ],
      "instructions": "If a customer ask a forecast, leverage the sql fonction ai_forecast.\nThe mailing_list column in the campaigns table contains all the contact_ids of the contacts to whom the campaign was sent.\nUse the metric views as the primary semantic layer. Metrics already encapsulate joins and business logic, so avoid joining raw tables unless explicitly required.",
       
