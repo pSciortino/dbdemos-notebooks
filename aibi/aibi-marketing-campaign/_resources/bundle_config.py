@@ -898,20 +898,19 @@
      "description": "Analyze your Marketing Campaign effectiveness leveraging AI/BI Dashboard. Deep dive into your data and metrics.",
      "table_identifiers": ["{{CATALOG}}.{{SCHEMA}}.metrics_events",
                            "{{CATALOG}}.{{SCHEMA}}.metrics_feedback",
-                           "{{CATALOG}}.{{SCHEMA}}.metrics_issues",
-                           "{{CATALOG}}.{{SCHEMA}}.metrics_daily_rolling"],
+                           "{{CATALOG}}.{{SCHEMA}}.metrics_issues"],
      "sql_instructions": [
         {
             "title": "Compute rolling metrics",
-            "content": "SELECT event_date, MEASURE(unique_clicks) AS daily_unique_clicks, MEASURE(t7d_unique_clicks) AS t7d_unique_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY event_date ORDER BY event_date"
+            "content": "SELECT\n    event_date,\n    MEASURE(unique_clicks) AS daily_unique_clicks,\n    MEASURE(ctr_t7d) AS t7d_unique_clicks\nFROM {{CATALOG}}.{{SCHEMA}}.metrics_events\nGROUP BY event_date\nORDER BY event_date"
         },
         {
             "title": "What are the campaigns with the highest click-through rates?",
-            "content": "SELECT MEASURE(campaign_id) AS campaign_id,  MEASURE(campaign_name) AS campaign_name, MEASURE(cost) AS cost, MEASURE(start_date) AS start_date, MEASURE(end_date) AS end_date, MEASURE(total_sent) AS total_sent, MEASURE(total_sent) AS total_sent, MEASURE(total_delivered) AS total_delivered, MEASURE(total_spam) AS total_spam, MEASURE(total_opens) AS total_opens, MEASURE(total_optouts) AS total_optouts, MEASURE(total_clicks) AS total_clicks, MEASURE(unique_clicks) AS unique_clicks, MEASURE(ctr) AS ctr, MEASURE(delivery_rate) AS delivery_rate, MEASURE(optouts_rate) AS optouts_rate, MEASURE(spam_rate) AS spam_rate FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY MEASURE(campaign_id), MEASURE(campaign_name), MEASURE(cost), MEASURE(start_date), MEASURE(end_date) ORDER BY MEASURE(ctr) DESC, MEASURE(cost) ASC LIMIT 20"
+            "content": "SELECT\n    campaign_id,\n    campaign_name,\n    cost,\n    start_date,\n    end_date,\n    MEASURE(total_sent) AS total_sent,\n    MEASURE(total_delivered) AS total_delivered,\n    MEASURE(total_clicks) AS total_clicks,\n    MEASURE(unique_clicks) AS unique_clicks,\n    MEASURE(ctr) AS ctr\nFROM {{CATALOG}}.{{SCHEMA}}.metrics_events\nWHERE start_date >= :start_date AND end_date <= :end_date\nGROUP BY ALL\nORDER BY ctr DESC, cost ASC\nLIMIT 20"
         }
     ],
      "instructions": "If a customer ask a forecast, leverage the sql fonction ai_forecast.\nThe mailing_list column in the campaigns table contains all the contact_ids of the contacts to whom the campaign was sent.\nUse the metric views as the primary semantic layer. Metrics already encapsulate joins and business logic, so avoid joining raw tables unless explicitly required.",
-
+      
       "function_names": [
         "{{CATALOG}}.{{SCHEMA}}.get_highest_ctr"
       ],
@@ -928,11 +927,19 @@
       },
       {
         "question_text": "Which campaign had the highest total number of clicks?",
-        "answer_text": "SELECT campaign_name, MEASURE(total_clicks) AS total_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_name ORDER BY total_clicks DESC LIMIT 1"
+        "answer_text": "SELECT campaign_id, campaign_name, MEASURE(total_clicks) AS total_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_id, campaign_name ORDER BY total_clicks DESC LIMIT 1"
       },
       {
         "question_text": "What is the total number of opens for each campaign?",
-        "answer_text": "SELECT campaign_name, MEASURE(total_opens) AS total_opens FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_name ORDER BY campaign_name"
+        "answer_text": "SELECT campaign_id,campaign_name, MEASURE(total_opens) AS total_opens FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_id, campaign_name ORDER BY total_opens DESC"
+      },
+      {
+        "question_text": "Which campaign had the max total number of opens? Give me the top 1",
+        "answer_text": "SELECT campaign_id, campaign_name, MEASURE(total_opens) AS total_opens FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_id, campaign_name ORDER BY total_opens DESC LIMIT 1"
+      },
+      {
+        "question_text": "What is the total number of clicks for each campaign? Order by campaign id",
+        "answer_text": "SELECT campaign_id, campaign_name, MEASURE(total_clicks) AS total_clicks FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_id, campaign_name ORDER BY campaign_id"
       }
     ]
     }
