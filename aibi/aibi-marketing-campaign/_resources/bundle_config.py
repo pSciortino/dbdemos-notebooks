@@ -851,7 +851,7 @@
       },
       {
         "question_text": "What is the total number of opens for each campaign?",
-        "answer_text": "SELECT campaign_id,campaign_name, MEASURE(total_opens) AS total_opens FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_id, campaign_name ORDER BY campaign_id,campaign_name"
+        "answer_text": "SELECT campaign_id,campaign_name, MEASURE(total_opens) AS total_opens FROM {{CATALOG}}.{{SCHEMA}}.metrics_events GROUP BY campaign_id, campaign_name ORDER BY total_opens DESC"
       },
       {
         "question_text": "Which campaign had the max total number of opens? Give me the top 1",
