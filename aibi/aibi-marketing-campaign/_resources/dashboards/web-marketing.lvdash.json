@@ -2920,6 +2920,11 @@
         "#BF7080"
       ],
       "widgetHeaderAlignment": "LEFT"
+    },    
+    "genieSpace": {
+      "isEnabled": true,
+      "overrideId": "",
+      "enablementMode": "ENABLED"
     },
     "genieSpace": {
       "isEnabled": true,

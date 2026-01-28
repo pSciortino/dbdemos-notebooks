@@ -805,6 +805,86 @@
                 - distinct campaigns
                 - affected campaigns
             $$
+          """,
+          """
+          CREATE OR REPLACE VIEW `{{CATALOG}}`.`{{SCHEMA}}`.metrics_daily_rolling
+          WITH METRICS
+          LANGUAGE YAML
+          AS $$
+          version: 1.1
+
+          source: |-
+            SELECT
+              CAST(event_date AS DATE) AS date,
+              contact_id,
+              event_type
+              FROM {{CATALOG}}.{{SCHEMA}}.events
+          comment: "Daily and 7-day trailing (t7d_) email engagement metrics, sliced by event_type."
+
+          dimensions:
+            - name: Date
+              expr: date
+            - name: Event Type
+              expr: event_type
+
+          measures:
+            - name: unique_clicks
+              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
+            - name: total_delivered
+              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
+            - name: total_sent
+              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
+            - name: total_opens
+              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
+            - name: total_clicks
+              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+            - name: total_optouts
+              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
+            - name: total_spam
+              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
+            - name: t7d_unique_clicks
+              expr: COUNT(DISTINCT CASE WHEN event_type = 'click' THEN contact_id END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_delivered
+              expr: SUM(CASE WHEN event_type = 'delivered' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_sent
+              expr: SUM(CASE WHEN event_type = 'sent' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_opens
+              expr: SUM(CASE WHEN event_type = 'html_open' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_clicks
+              expr: SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_optouts
+              expr: SUM(CASE WHEN event_type = 'optout_click' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+            - name: t7d_total_spam
+              expr: SUM(CASE WHEN event_type = 'spam' THEN 1 ELSE 0 END)
+              window:
+                - order: Date
+                  semiadditive: last
+                  range: trailing 7 day
+          $$
           """
       ],
       [
